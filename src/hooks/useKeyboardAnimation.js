@@ -1,36 +1,21 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLoader } from "@react-three/fiber";
 import * as THREE from "three";
 import { useAnimations } from "@react-three/drei";
+import useScrollEnd from "./useScrollEnd";
 
-const useKeyboardAnimation = (animations, keyboard, soundFile = "./audio/click.mp3") => {
-  const { actions, mixer } = useAnimations(animations, keyboard);
+const useKeyboardAnimation = (keyboard, animations, soundFile = "./audio/click.mp3") => {
+  const { actions, mixer, names } = useAnimations(animations, keyboard);
+
   const soundBuffer = useLoader(THREE.AudioLoader, soundFile);
   const soundRef = useRef(null);
+  const intervalRef = useRef(null);
 
-  const setAction = (fromAction, toActionName) => {
-    const toAction = actions[toActionName];
-    toAction.loop = THREE.LoopOnce;
-
-    // Play the sound
-    // soundRef.current.play();
-
-    // Reset the action before playing it
-    toAction.reset();
-
-    // Crossfade with a very short duration for fast transitions
-    if (fromAction) {
-      fromAction.crossFadeTo(toAction, 0.05, true); // Very fast crossfade (0.05 seconds)
-    }
-
-    // Play the action immediately
-    toAction.play();
-
-    return toAction; // Return the newly played action
-  };
+  const isAtScrollEnd = useScrollEnd();
 
   useEffect(() => {
-    // Sound listener setup
+    if (!isAtScrollEnd) return;
+
     const listener = new THREE.AudioListener();
     const sound = new THREE.Audio(listener);
     sound.setBuffer(soundBuffer);
@@ -39,32 +24,31 @@ const useKeyboardAnimation = (animations, keyboard, soundFile = "./audio/click.m
     keyboard.current.add(listener);
     soundRef.current = sound;
 
-    // Animation handling
-    let currentActionIndex = 0;
-    const animationNames = ["action1", "action2", "action3"]; // Extract action names dynamically
-    let currentAction = null; // To track the current action
+    const action = actions[names[0]];
+    const actionDuration = action.getClip().duration;
 
-    // Function to transition to the next animation
-    const playNextAction = () => {
-      // soundRef.current.stop(); // Stop the sound
-      currentActionIndex = (currentActionIndex + 1) % animationNames.length; // Move to the next animation
-      currentAction = setAction(currentAction, animationNames[currentActionIndex]); // Crossfade to the next action
-    };
+    action.reset().fadeIn(0.5).play();
+    action.setLoop(THREE.LoopOnce, 1);
+    action.clampWhenFinished = true;
 
-    // Start the first animation
-    currentAction = setAction(null, animationNames[currentActionIndex]);
+    const intervalTime = (actionDuration / 10) * 1000;
 
-    // Event listener for when an animation finishes
-    mixer.addEventListener("finished", playNextAction);
+    intervalRef.current = setInterval(() => {
+      if (soundRef.current.isPlaying) soundRef.current.stop();
+      soundRef.current.play();
+    }, intervalTime);
 
-    // Cleanup function to remove event listener and stop sound
+    mixer.addEventListener("finished", () => {
+      soundRef.current.stop();
+      clearInterval(intervalRef.current);
+    });
+
     return () => {
-      mixer.removeEventListener("finished", playNextAction);
-      // soundRef.current.stop(); // Stop sound on component unmount
+      action.fadeOut(0.5);
+      soundRef.current.stop();
+      clearInterval(intervalRef.current);
     };
-  }, [actions, mixer, soundBuffer, keyboard]);
-
-  return { setAction, mixer }; // Return useful functions or values if needed
+  }, [keyboard, isAtScrollEnd]);
 };
 
 export default useKeyboardAnimation;

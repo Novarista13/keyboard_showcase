@@ -6,7 +6,7 @@ import { useControls } from "leva";
 export const Experience = () => {
   const { position, intensity } = useControls("light", {
     position: {
-      value: { x: -0.8, y: 2.25, z: 3 },
+      value: { x: -1, y: 0.2, z: 3.5 },
       step: 0.01,
     },
     intensity: {
@@ -30,7 +30,6 @@ export const Experience = () => {
 
       <ScrollControls pages={4} damping={0.25}>
         <Overlay />
-
         <Keyboard />
       </ScrollControls>
     </>

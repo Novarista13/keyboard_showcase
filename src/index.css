@@ -22,3 +22,19 @@ html {
   background-color: #8ec5fc;
   background-image: linear-gradient(62deg, #8ec5fc 0%, #e0c3fc 100%);
 }
+
+.credit {
+  position: absolute;
+  bottom: 5px;
+  left: 10px;
+  color: #4b0082;
+  letter-spacing: 0.5px;
+  pointer-events: auto;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.credit .highlight {
+  color: #1a1a40;
+  text-decoration: underline;
+}

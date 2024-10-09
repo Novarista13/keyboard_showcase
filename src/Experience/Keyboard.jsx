@@ -1,14 +1,16 @@
 import * as THREE from "three";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { useGLTF } from "@react-three/drei";
-import { useThree } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 
 import useKeyboardAnimation from "../hooks/useKeyboardAnimation";
 import useKeyboardScrollAnimation from "../hooks/useKeyboardScrollAnimation";
 import useConfigurator from "../stores/useConfigurator";
 import { useControls } from "leva";
+import useScrollEnd from "../hooks/useScrollEnd";
+import { useResponsiveScale, useResponsiveX, useResponsiveY } from "../hooks/useResponsive";
 
 const WhiteKeys = ({ nodes, material }) => {
   const { whiteKeyColor } = useConfigurator();
@@ -178,27 +180,36 @@ const Plate = ({ nodes, switchMaterial, switchBottomMaterial }) => {
 
 export default function Keyboard(props) {
   const keyboard = useRef();
-  const viewport = useThree((state) => state.viewport);
 
   const { position, rotation } = useControls({
     position: { value: { x: 1.5, y: 0, z: 2 }, step: 0.01 },
     rotation: { value: { x: 1.05, y: -0.48, z: 0.09 }, step: 0.01 },
   });
 
-  const { nodes, materials, animations } = useGLTF("./models/keyboard1.glb");
+  const { nodes, materials, animations } = useGLTF("./models/keyboard.glb");
+
   // key caps animation
-  useKeyboardAnimation(animations, keyboard);
+  useCallback(() => {
+    useKeyboardAnimation(keyboard, animations);
+  }, [keyboard, animations])();
 
   // whole keyboard animation
-  useKeyboardScrollAnimation(keyboard);
+  useCallback(() => {
+    useKeyboardScrollAnimation(keyboard);
+  }, [keyboard])();
+
+  // responsiveX function
+  const responsiveX = useResponsiveX();
+  const responsiveY = useResponsiveY();
+  const responsiveScale = useResponsiveScale();
 
   return (
     <group
       ref={keyboard}
       {...props}
-      position={[position.x, position.y, position.z]}
+      position={[responsiveX(position.x), responsiveY(position.y), position.z]}
       rotation={[rotation.x, rotation.y, rotation.z]}
-      scale={viewport.width}
+      scale={responsiveScale(13)}
       name="Scene"
     >
       <Plate
@@ -212,4 +223,4 @@ export default function Keyboard(props) {
   );
 }
 
-useGLTF.preload("/models/keyboard1.glb");
+useGLTF.preload("/models/keyboard.glb");
